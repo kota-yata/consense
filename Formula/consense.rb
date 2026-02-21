@@ -1,8 +1,8 @@
 class Consense < Formula
   desc "Open Scrapbox pages from the CLI"
   homepage "https://github.com/kota-yata/consense"
-  url "https://github.com/kota-yata/consense/archive/refs/tags/v0.1.2.tar.gz"
-  sha256 "a76591acc44d74a3fc065ad6c87bf5a9b96310192743ac45a16f388849cffe1b"
+  url "https://github.com/kota-yata/consense/archive/refs/tags/v0.1.3.tar.gz"
+  sha256 "ae335b57b370d1e33008ea06d78ace20fb69fecd94b591ccbba258c84b0e14d8"
   head "https://github.com/kota-yata/consense.git", branch: "main"
 
   def install
