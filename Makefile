@@ -2,7 +2,7 @@ CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c11
 
 BIN := consense
-SRC := src/consense.c
+SRC := src/consense.c src/compress.c src/decompress.c
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
@@ -13,7 +13,7 @@ INSTALL ?= install
 all: $(BIN)
 
 $(BIN): $(SRC)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $(SRC)
 
 install: $(BIN)
 	$(INSTALL) -d "$(DESTDIR)$(BINDIR)"

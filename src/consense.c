@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <unistd.h>
 
+int compress_backup(const char *input_path, const char *output_path);
+
 static int is_unreserved(unsigned char c) {
     if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) return 1;
     if (c == '-' || c == '_' || c == '.' || c == '~') return 1;
@@ -119,10 +121,33 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr,
                 "Usage:\n"
+                "  %s compress <input.json> [output.json]\n"
+                "  %s decompress <input.json> [output.json]\n"
                 "  %s set-project <project>\n"
                 "  %s <page-name> [content]\n",
-                argv[0], argv[0]);
+                argv[0], argv[0], argv[0], argv[0]);
         return 1;
+    }
+
+    if (strcmp(argv[1], "compress") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: %s compress <input.json> [output.json]\n", argv[0]);
+            return 1;
+        }
+        const char *in = argv[2];
+        const char *out = (argc >= 4) ? argv[3] : NULL;
+        return compress_backup(in, out);
+    }
+
+    if (strcmp(argv[1], "decompress") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: %s decompress <input.json> [output.json]\n", argv[0]);
+            return 1;
+        }
+        extern int decompress_backup(const char *input_path, const char *output_path);
+        const char *in = argv[2];
+        const char *out = (argc >= 4) ? argv[3] : NULL;
+        return decompress_backup(in, out);
     }
 
     if (strcmp(argv[1], "set-project") == 0) {
