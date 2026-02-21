@@ -1,8 +1,8 @@
 consense command just opens consense(Scrapbox) page 
 
-run following to install (HEAD build)
+run following to install (stable)
 $ brew tap kota-yata/consense https://github.com/kota-yata/consense
-$ brew install --HEAD kota-yata/consense/consense
+$ brew install kota-yata/consense/consense
 
 consense set-project [project-name]
 consense [page-name]                  // opens the page with your default browser
