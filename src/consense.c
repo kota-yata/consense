@@ -34,6 +34,38 @@ static char *url_encode(const char *s) {
     return out;
 }
 
+static char *unescape_backslashes(const char *s) {
+    size_t len = strlen(s);
+    char *out = (char *)malloc(len + 1);
+    if (!out) return NULL;
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (c == '\\' && i + 1 < len) {
+            unsigned char n = (unsigned char)s[i + 1];
+            switch (n) {
+                case 'n': out[j++] = '\n'; i++; break;
+                case 'r': out[j++] = '\r'; i++; break;
+                case 't': out[j++] = '\t'; i++; break;
+                case '\\': out[j++] = '\\'; i++; break;
+                case '"': out[j++] = '"'; i++; break;
+                case '\'': out[j++] = '\''; i++; break;
+                case 'b': out[j++] = '\b'; i++; break;
+                case 'f': out[j++] = '\f'; i++; break;
+                case '0': out[j++] = '\0'; i++; break;
+                default:
+                    // Unknown escape, keep as-is
+                    out[j++] = (char)c;
+                    break;
+            }
+        } else {
+            out[j++] = (char)c;
+        }
+    }
+    out[j] = '\0';
+    return out;
+}
+
 static char *config_path(void) {
     const char *home = getenv("HOME");
     if (!home) return NULL;
@@ -88,7 +120,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "Usage:\n"
                 "  %s set-project <project>\n"
-                "  %s <page-name>...\n",
+                "  %s <page-name> [content]\n",
                 argv[0], argv[0]);
         return 1;
     }
@@ -117,8 +149,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    // Determine if content is provided as the last argument
+    int has_content = (argc >= 3);
+    size_t page_args_end = argc - (has_content ? 1 : 0);
+
     size_t total_len = 0;
-    for (int i = 1; i < argc; i++) total_len += strlen(argv[i]) + (i + 1 < argc ? 1 : 0);
+    for (int i = 1; i < (int)page_args_end; i++) total_len += strlen(argv[i]) + (i + 1 < (int)page_args_end ? 1 : 0);
     char *page = (char *)malloc(total_len + 1);
     if (!page) {
         fprintf(stderr, "Allocation failed.\n");
@@ -126,9 +162,9 @@ int main(int argc, char **argv) {
         return 1;
     }
     page[0] = '\0';
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < (int)page_args_end; i++) {
         strcat(page, argv[i]);
-        if (i + 1 < argc) strcat(page, " ");
+        if (i + 1 < (int)page_args_end) strcat(page, " ");
     }
 
     char *encoded = url_encode(page);
@@ -140,16 +176,42 @@ int main(int argc, char **argv) {
     }
 
     const char *base = "https://scrapbox.io";
-    size_t url_len = strlen(base) + 1 + strlen(project) + 1 + strlen(encoded) + 1;
+    char *encoded_body = NULL;
+    if (has_content) {
+        char *unesc = unescape_backslashes(argv[argc - 1]);
+        if (!unesc) {
+            fprintf(stderr, "Allocation failed.\n");
+            free(project);
+            free(page);
+            free(encoded);
+            return 1;
+        }
+        encoded_body = url_encode(unesc);
+        free(unesc);
+        if (!encoded_body) {
+            fprintf(stderr, "Encoding failed.\n");
+            free(project);
+            free(page);
+            free(encoded);
+            return 1;
+        }
+    }
+
+    size_t url_len = strlen(base) + 1 + strlen(project) + 1 + strlen(encoded) + (has_content ? (6 + 1 + strlen(encoded_body)) : 0) + 1;
     char *url = (char *)malloc(url_len);
     if (!url) {
         fprintf(stderr, "Allocation failed.\n");
         free(project);
         free(page);
         free(encoded);
+        if (encoded_body) free(encoded_body);
         return 1;
     }
-    snprintf(url, url_len, "%s/%s/%s", base, project, encoded);
+    if (has_content) {
+        snprintf(url, url_len, "%s/%s/%s?body=%s", base, project, encoded, encoded_body);
+    } else {
+        snprintf(url, url_len, "%s/%s/%s", base, project, encoded);
+    }
 
     int rc = 0;
 #if defined(__APPLE__)
@@ -167,6 +229,7 @@ int main(int argc, char **argv) {
     free(project);
     free(page);
     free(encoded);
+    if (encoded_body) free(encoded_body);
     free(url);
     return rc;
 }

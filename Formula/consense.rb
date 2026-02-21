@@ -3,12 +3,6 @@ class Consense < Formula
   homepage "https://github.com/kota-yata/consense"
   head "https://github.com/kota-yata/consense.git", branch: "main"
 
-  # For a stable release (recommended over head-only for public taps):
-  # 1) Tag a release in your repo (e.g., v0.1.1)
-  # 2) Uncomment url/sha256 below with the release tarball and checksum
-  # url "https://github.com/kota-yata/consense/archive/refs/tags/v0.1.1.tar.gz"
-  # sha256 "REPLACE_WITH_SHA256"
-
   def install
     system "make"
     bin.install "consense"
@@ -17,5 +11,8 @@ class Consense < Formula
   test do
     system bin/"consense", "set-project", "brewtest"
     assert_match "brewtest", (testpath/".consense_project").read
+    # Running without a browser should fail; assert URL appears in stderr
+    out = shell_output("#{bin}/consense p \"A\\nB\" 2>&1", 1)
+    assert_match %r{https://scrapbox.io/brewtest/p\?body=A%0AB}, out
   end
 end
